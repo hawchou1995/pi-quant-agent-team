@@ -68,7 +68,32 @@ purged_kfold.py     → fold 0: test= 20 train= 75 (purged+embargoed 5 rows)
 
 ## 5. 未完成 / 需注意
 
-- `pandaai-experimenter` 定义里的登录命令指向作者本机路径，换机需自行替换。
+- `pandaai-experimenter` 的登录命令**已改指向 PI 技能根**（`<PI 技能根>/skill-pandaai-factor-online/scripts/bootstrap.py --login`），
+  不再指 `.zcode`；换机只需确认 PI 技能根位置（Windows 下即 `%USERPROFILE%` 内的用户级技能目录）。
 - 平台侧（PandaAI CLI / 登录态）不在本仓库范围内，未登录时 `bootstrap.py --status`
-  返回 `{"ok": false}` 属预期。
+  返回 `{"ok": false, "status": "LOGIN_REQUIRED"}` 属预期。
 - 技能 frontmatter 的 `name:` 与目录名有三处不一致，**PI 按 `name` 注册**，见 README。
+- **【已知缺陷 A · 未修】** `skill-strategy-tearsheet-report/scripts/metrics.py` 在本机 pandas 3.0.5 下抛
+  `ValueError: 'M' is no longer supported for offsets. Please use 'ME' instead.`
+  （`metrics.py:300 resample("M")`，由 `:399 compute_all` 调用；`:316 resample("Y")` 同因）。
+  修法：两处改 `"ME"` / `"YE"`（如需兼容旧 pandas 加版本分支）。
+  **未修 ⇒ `tearsheet_workbuddy.py` 当前 rc=1**；绩效指标一律改走 `fleur_absorb/engine/metrics.py`。
+  （本地已实装副本位于受写守卫的技能根，本仓库不代为改写；`README` 的「安装」步会把本仓库内容同步过去。）
+- **【已知缺陷 B · 迁入技能自带】** `skill-pandaai-factor-online/scripts/selftest.py` 与同目录 `bootstrap.py` **版本不同步**：
+  selftest 引用 `report_cli_version` / `check_skill_update` / `check_references` 三个 **`bootstrap.py` 并不存在**的函数，
+  实测 `Ran 55 tests ... FAILED (failures=1, errors=3, skipped=2)`。**不得据此声称平台链路全绿**。
+- **【本机依赖】** `check_dependencies.py` 报 `statsmodels` / `pdfplumber` 缺失（`ok=false`）；
+  `pyarrow` 需把 `D:\Tools\pylibs` 置于 `PYTHONPATH` 才为 `true`。
+
+## 6. 验证脚本的真实退出码（2026-10-08，含未通过项）
+
+两个 runtime 校验脚本的**正确用法**与现状（避免下次误判为"仓库坏了"）：
+
+| 脚本 | 用法 | rc | 结果 |
+|---|---|---|---|
+| `environment_preflight.py` | `--out <json> --skip-online --skill <name>=<dir>`（五条，格式必须含 `=`） | **0** | `success=true`；`skill_declarations: pass（5 declaration(s) hashed）`、`python 3.14.7`、`cli 0.1.7`、`group_number_contract pass`、`request_scope pass`；`authentication_and_balance: warning`（`--skip-online`）⇒ `execution_ready=false` 属预期 |
+| `environment_preflight.py` | 不带 `--skill` | 2 | `skill_declarations: fail（0 declaration(s) hashed）` + `preflight requires exactly the five declared team skills`。**原始 WorkBuddy 插件根同样 rc=2**，属技能既定行为 |
+| `validate_agent.py` | `[root]` | 1 | 期望 **team-package 根布局**（根级 `AGENTS.md` / `README.en.md` / `CLAUDE.md` / `agents/team.json` / `agents/openai.yaml` / `agents/portable-loader.md`）。**原始插件与本仓库都不具备该布局**（`AGENTS.md` 实际在 `skills/ai-quant-team-runtime/references/`）⇒ **布局不匹配，非内容缺陷** |
+
+结论：`environment_preflight.py` 用正确声明可 **rc=0**；`validate_agent.py` 需要团队包布局才能通过，
+本仓库选择的是"技能目录 + subagents 定义"布局，故该脚本不适用于本仓库根 —— 留档在此，不再反复试跑。

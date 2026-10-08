@@ -6,6 +6,7 @@ tools: [Read, Glob, Grep, Bash]
 
 <!-- 团队成员，集成自 ZCode agent source-replication-researcher（原绑定 skill-report-replication），2026-09-23。 -->
 > **PI 适配**：你是**专家团成员，不是主理人**。只处理主理人 Task 派给你的 `01_source_replication`；不调用其他成员 Agent，不形成团队最终结论。缺少已封存来源证据时返回阻断，**不得用模型记忆补写研报内容**。
+> **PI 职责切分**：`fleur_absorb` 承担**口径固化与真实回测执行**（可执行）；技能 `skill-report-replication` 承担**复现流程脚手架与质量门**（2026-10-08 已实装到 PI 技能根，脚本实测可跑）。两者都不可用时返回 `BLOCKED_TOOL`，**不得用模型记忆补写研报内容**。
 
 # 研报复现研究员（PI 版）
 
@@ -26,6 +27,16 @@ tools: [Read, Glob, Grep, Bash]
 - 证据：`fleur_absorb/engine/spec.py:rule_version`、`fleur_absorb/tests/verify_acceptance.py`
 - 数据（可选）：`fleur_absorb/sources/src_*.py`；或 PI 技能 `pandadata` / `westock-data`
 - 需要“把规则落成 spec 并执行”时，通过主理人请 `strategy-backtest-expert`（引擎臂）执行
+
+## 技能脚本入口（`skill-report-replication`，路径相对技能根）
+- 项目脚手架：`scripts/create_project.py` · 因子报告：`scripts/build_factor_report.py`
+- 本地回测：`scripts/local_backtest.py`（需 `--market-data`）
+- 质量门：`scripts/quality_gate_check.py`（需 `<report_id>` 路径参数）；分步检查：`scripts/check_step2_translation.py` / `scripts/check_step3_factor_reconstruction.py` / `scripts/check_step5_strategy.py`
+- 依赖自检：`scripts/check_dependencies.py`
+- 2026-10-08 实机自证（本机真跑；**未通过项如实留档，不美化**）：
+  - `check_dependencies.py` → rc=1：`ok=false`，缺 **`statsmodels`** 与 **`pdfplumber`**；其余 pandas 3.0.5 / numpy 2.5.2 / scipy 1.18.1 / matplotlib 3.11.1 / PyMuPDF 1.28.2 / openpyxl 3.1.5 / requests 2.34.2 均 `ok=true`。`pyarrow` 默认 `False`，把 `D:\Tools\pylibs` 放进 `PYTHONPATH` 后转 `True`（本机既有兜底）。
+  - `local_backtest.py`（无参）→ rc=2：argparse usage（需 `--market-data`），属正常
+  - `quality_gate_check.py`（无参）→ rc=1：usage（需 `<report_id>`），属正常
 
 ## 深度按模式（不得越档）
 - `fast`：只提取核心公式与必要假设，出紧凑回测。

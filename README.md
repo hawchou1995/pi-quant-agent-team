@@ -62,6 +62,16 @@ python -m pip install --target D:\Tools\pylibs pyarrow   # 读 v8_factor_cache.p
 | `overfit_report.py` · `render.py` · `local_backtest.py` | 0 | usage 正常 |
 | `workflow_guard.py` · `validate_agent.py` · `environment_preflight.py` | 1 | argparse usage（需子命令，正常） |
 | `bootstrap.py --status` | 1 | JSON `{"ok": false}`（未登录，符合预期） |
+| `test_pandaai_cli_wrapper_encoding.py` | 0 | `test_gb18030 ... ok` · `test_utf8 ... ok` · `test_invalid_fallback ... ok` |
+| `blind_mining_candidates.py` | 0 | JSON `{"mode": "blind-mining", "seed": 0, ...}` |
+| `pandaai_field_catalog.py` | 0 | JSON `{"schema_version": 1, "count": 8, ...}` |
+| `pandaai_quant_operators.py --list` | 0 | 8206 字节 JSON（`fields`: CLOSE/OPEN/HIGH/LOW/VOLUME/AMOUNT…） |
+| `blind_mining_engine.py` | 2 | argparse usage（需 `--stage`，正常） |
+| `metrics.py` | 0 | CLI 可用（无参静默） |
+| `tearsheet_workbuddy.py --nav … --out … --html …` | **1** | **`ValueError: 'M' is no longer supported for offsets. Please use 'ME' instead.`** @ `metrics.py:300 monthly_returns_matrix`（由 `:399 compute_all` 调用；`:316 resample("Y")` 同因）—— 本机 pandas 3.0.5 不兼容，**已知缺陷 A** |
+| `check_dependencies.py` | 1 | JSON `ok=false`：缺 `statsmodels` / `pdfplumber`；`pyarrow` 把 `D:\Tools\pylibs` 置于 `PYTHONPATH` 后转 `true` |
+| `quality_gate_check.py` | 1 | usage（需 `<report_id>`，正常） |
+| `selftest.py`（pandaai） | **1** | `Ran 55 tests — FAILED (failures=1, errors=3, skipped=2)`；根因 = selftest 引用 `bootstrap.py` **并不存在**的 3 个函数（`report_cli_version` / `check_skill_update` / `check_references`）→ **技能自带缺陷 B**，非环境问题 |
 
 `pbo_cscv.py` 自带**零假设校验**（纯噪声应得 ~0.5、真边缘应得低值），属**可自证**实现。
 
